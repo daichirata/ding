@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 require "rack/content_length"
 require "rack/chunked"
-require 'pry'
 require File.expand_path(File.dirname(__FILE__) + '/../../ding')
 
 module Rack

@@ -22,7 +22,7 @@ module Ding
       @env = {
         "GATEWAY_INTERFACE" => "CGI/1.1",
         "PATH_INFO"         => @parser.request_uri.path,
-        "QUERY_STRING"      => it = @parser.request_uri.query ? it.dup : "",
+        "QUERY_STRING"      => (it = @parser.request_uri.query) ? it : "",
         "SCRIPT_NAME"       => "",
         "SERVER_NAME"       => @parser.request_uri.host,
         "SERVER_PORT"       => @parser.request_uri.port.to_s,

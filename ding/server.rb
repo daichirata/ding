@@ -54,7 +54,7 @@ module Ding
         #client.write(res)
       rescue => e
         log_error e
-        client.write(ERROR_404_RESPONSE)
+        #client.write(ERROR_404_RESPONSE)
       ensure
         client.close
       end
