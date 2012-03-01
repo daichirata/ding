@@ -1,16 +1,13 @@
-require 'stringio'
 module Ding
   class Request
+    attr_reader :env, :request_time, :request_line
+
     def initialize(client)
       @request_time = Time.now
-
-      @data = client.readpartial(CHUNK_SIZE)
-      @parser = Parser.new(@data)
-      @addr     = client.respond_to?(:addr)     ? client.addr     : []
       @peeraddr = client.respond_to?(:peeraddr) ? client.peeraddr : []
+      @data     = client.readpartial(Const::CHUNK_SIZE)
+      @parser   = Parser.new(@data)
     end
-
-    attr_reader :env
 
     def self.parse(client)
       new(client).parse
@@ -20,20 +17,22 @@ module Ding
       @parser.parse
 
       @env = {
+        # Meta
         "GATEWAY_INTERFACE" => "CGI/1.1",
         "PATH_INFO"         => @parser.request_uri.path,
         "QUERY_STRING"      => (it = @parser.request_uri.query) ? it : "",
         "SCRIPT_NAME"       => "",
         "SERVER_NAME"       => @parser.request_uri.host,
         "SERVER_PORT"       => @parser.request_uri.port.to_s,
-        "SERVER_PROTOCOL"   => HTTP_PROTOCOL,
-        "SERVER_SOFTWARE"   => DING_INFO,
+        "SERVER_PROTOCOL"   => "HTTP/1.1",
+        "SERVER_SOFTWARE"   => "Ding #{Const::DING_VERSION}",
         "REQUEST_METHOD"    => @parser.request_method,
         "REQUEST_URI"       => @parser.request_uri.request_uri,
         "REMOTE_USER"       => "",
         "REMOTE_ADDR"       => @peeraddr[3],
         "REMOTE_HOST"       => @peeraddr[2],
 
+        # Rack
         "rack.version"      => Rack::VERSION,
         "rack.input"        => StringIO.new(@parser.message_body),
         "rack.errors"       => $stderr,
@@ -54,6 +53,8 @@ module Ding
           @env[name] = val
         end
       end
+
+      @request_line = @parser.request_line
       return self
     end
 
@@ -61,11 +62,11 @@ module Ding
       # attr_reader :request_line, :request_method, :request_uri,
       #             :request_header, :http_version, :message_body
 
-      attr_reader :request_header, :request_method, :request_uri, :message_body
+      attr_reader :request_line, :request_method, :request_uri, :request_header, :message_body
 
       def initialize(source)
         @request_line = source.slice!(/(.*)\r\n/).strip
-        if REQUEST_LINE_REGEXP =~ @request_line
+        if Regexep::REQUEST_LINE =~ @request_line
           @request_method = $1
           @unparsed_uri   = $2
           @http_version   = $3
@@ -81,14 +82,14 @@ module Ding
       def parse
         until eos?
           case
-          when scan(FIELD_REGEXP)
+          when scan(Regexep::FIELD)
             field = self[1].strip
             value = self[2].strip
 
             unless @request_header.has_key?(field)
               @request_header[field] = value
             end
-          when scan(BORDER_REGEXP)
+          when scan(Regexep::BORDER)
             @message_body = rest
             break
           else
@@ -101,14 +102,15 @@ module Ding
       def parse_uri
         if request_host = @request_header["Host"]
           uri = URI.parse(@unparsed_uri)
-          host, port = *request_host.scan(URI_REGEXEP)[0]
+          host, port = *request_host.scan(Regexep::URI)[0]
           uri.scheme = 'http'
-          uri.host, uri.port = host, port ? port.to_i : nil
+          uri.host = host
+          uri.port = port ? port.to_i : nil
           @request_uri = URI.parse(uri.to_s)
         else
           raise ParseError
         end
       end
-    end
+    end # Parser END
   end
 end

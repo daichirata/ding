@@ -4,14 +4,10 @@ module Ding
 
     def initialize(host = nil, port = nil, app = nil)
       @app  = app
-      @host = host || '0.0.0.0'
-      @port = port || 1212
-
+      @host = host || Const::DEFAULT_HOST
+      @port = port || Const::DEFAULT_PORT
       @socket  = TCPServer.new(@host, @port)
       @workers = ThreadGroup.new
-
-      log ">> Ding #{DING_VERSION}"
-      log ">> ruby #{RUBY_INFO}"
     end
 
     def self.start(host, port, app)
@@ -19,7 +15,9 @@ module Ding
     end
 
     def start
-      log   ">> Listening on pid=#{$$} port=#{@port}, CTRL+C to stop"
+      log ">> Ding #{Const::DING_VERSION}"
+      log ">> ruby #{Const::RUBY_INFO}"
+      log ">> #{self.class}#start: pid=#{$$} port=#{@port}, CTRL+C to stop"
       debug ">> Debugging ON"
       trace ">> Tracing ON"
 
@@ -45,8 +43,8 @@ module Ding
 
     def process_client(client)
       begin
-        res = Request.parse(client)
-        unless Response.send(client, *@app.call(res.env))
+        request = Request.parse(client)
+        unless Response.send(client, request, @app)
           raise ServerError
         end
       rescue => e
@@ -63,9 +61,7 @@ module Ding
           @workers.list.each {|worker| worker.join}
 
           log ">> #{self.class}#start done."
-          @socket.close
-
-          log ">> Stopping ..."; exit 1
+          @socket.close; exit 1
         end
       end
 

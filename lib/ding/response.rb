@@ -2,17 +2,15 @@ module Ding
   class Response
     include ::Ding::Log
 
-    def initialize(client, status, headers, body)
-      @client = client
-      @status = status.to_i
-      @headers = headers
-      @body = body
+    def initialize(client, request, app)
+      @client  = client
+      @request = request
+      @status, @headers, @body = app.call(request.env)
+      @status = @status.to_i
     end
 
-    attr_reader :status, :headers, :body
-
-    def self.send(client, status, headers, body)
-      new(client, status, headers, body).send
+    def self.send(client, request, app)
+      new(client, request, app).send
     end
 
     def send
@@ -24,8 +22,8 @@ module Ding
 
     def send_status
       unless @status_sent
-        status = STATUS_FORMAT % [@status, HTTP_STATUS_CODES[@status]]
-#        log ">> " + status.split(LINE_END)[0]
+        status = Const::STATUS_FORMAT % [@status, HTTP_STATUS_CODES[@status]]
+        log_access(@request, @status, @headers)
 
         @client.write(status)
         @status_sent = true
@@ -35,13 +33,11 @@ module Ding
     def send_header
       header = Header.new
       @headers.each do |key, vs|
-        vs.split("\n").each do |val|
-          header[key] = val
-        end
+        vs.split("\n").each{|val| header[key] = val}
       end
 
       unless @header_sent
-        @client.write(header.to_s + LINE_END)
+        @client.write(header.to_s + Const::LINE_END)
         @header_sent = true
       end
     end
@@ -61,16 +57,17 @@ module Ding
   end
 
   class Header
-    HEADER_FORMAT      = "%s: %s\r\n".freeze
-    ALLOWED_DUPLICATES = %w(Set-Cookie Set-Cookie2 Warning WWW-Authenticate).freeze
-
     def initialize
       @sent = {}
-      @out = []
+      @out  = []
+    end
+
+    def has_key?(key)
+      @sent[key]
     end
 
     def []=(key, value)
-      if !@sent.has_key?(key) || ALLOWED_DUPLICATES.include?(key)
+      if !@sent.has_key?(key) || Const::ALLOWED_DUPLICATES.include?(key)
         @sent[key] = true
         value = case value
                 when Time
@@ -80,16 +77,10 @@ module Ding
                 else
                   value.to_s
                 end
-        @out << HEADER_FORMAT % [key, value]
+        @out << Const::HEADER_FORMAT % [key, value]
       end
     end
 
-    def has_key?(key)
-      @sent[key]
-    end
-
-    def to_s
-      @out.join
-    end
+    def to_s; @out.join end
   end
 end

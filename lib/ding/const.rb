@@ -1,20 +1,42 @@
 module Ding
-  DING_VERSION = VERSION = '0.0.1'.freeze
 
-  RUBY_INFO = "#{RUBY_VERSION} (#{RUBY_RELEASE_DATE}) [#{RUBY_PLATFORM}]".freeze
+  module Const
 
-  DING_INFO = "Ding/#{DING_VERSION} (Ruby/#{RUBY_VERSION}/#{RUBY_RELEASE_DATE})".freeze
+    DING_VERSION = '0.0.1'
 
-  HTTP_PROTOCOL = "HTTP/1.1".freeze
+    DEFAULT_HOST = "0.0.0.0"
 
-  MAX_BODY = MAX_HEADER = CHUNK_SIZE = 1024 * (80 + 32)
+    DEFAULT_PORT = 1212
 
-  REQUEST_BODY_TMPFILE = 'ding-body'.freeze
+    DEFAULT_LISTEN = "#{DEFAULT_HOST}:#{DEFAULT_PORT}"
 
-  FIELD_REGEXP  = /^([A-Za-z0-9!\#$%&'*+\-.^_`|~]+):(.*)\r\n/o
-  BORDER_REGEXP = /^\r\n/o
-  URI_REGEXEP   = /\A(#{URI::REGEXP::PATTERN::HOST})(?::(\d+))?\z/no
-  REQUEST_LINE_REGEXP = /^(\S+)\s+(\S++)(?:\s+HTTP\/(\d+\.\d+))/mo
+    RUBY_INFO = "#{RUBY_VERSION} (#{RUBY_RELEASE_DATE}) [#{RUBY_PLATFORM}]"
+
+    MAX_BODY = MAX_HEADER = CHUNK_SIZE = 1024 * (80 + 32)
+
+    LINE_END="\r\n".freeze
+
+    STATUS_FORMAT = "HTTP/1.1 %d %s\r\nConnection: close\r\n".freeze
+
+    HEADER_FORMAT      = "%s: %s\r\n".freeze
+
+    ALLOWED_DUPLICATES = %w(Set-Cookie Set-Cookie2 Warning WWW-Authenticate).freeze
+
+    ERROR_404_RESPONSE="HTTP/1.1 404 Not Found\r\nConnection: close\r\nServer: Ding #{DING_VERSION}\r\n\r\nNOT FOUND".freeze
+
+  end
+
+  module Regexep
+
+    REQUEST_LINE = /^(\S+)\s+(\S++)(?:\s+HTTP\/(\d+\.\d+))/mo
+
+    URI   = /\A(#{URI::REGEXP::PATTERN::HOST})(?::(\d+))?\z/no
+
+    FIELD  = /^([A-Za-z0-9!\#$%&'*+\-.^_`|~]+):(.*)\r\n/o
+
+    BORDER = /^\r\n/o
+
+  end
 
   # Stolent from Mongrel.
   HTTP_STATUS_CODES = {
@@ -56,11 +78,5 @@ module Ding
     504  => 'Gateway Time-out',
     505  => 'HTTP Version not supported'
   }
-
-  LINE_END="\r\n".freeze
-
-  STATUS_FORMAT = "HTTP/1.1 %d %s\r\nConnection: close\r\n".freeze
-
-  ERROR_404_RESPONSE="HTTP/1.1 404 Not Found\r\nConnection: close\r\nServer: Ding #{DING_VERSION}\r\n\r\nNOT FOUND".freeze
 end
 
