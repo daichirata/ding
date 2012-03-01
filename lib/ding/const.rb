@@ -61,6 +61,6 @@ module Ding
 
   STATUS_FORMAT = "HTTP/1.1 %d %s\r\nConnection: close\r\n".freeze
 
-  ERROR_404_RESPONSE="HTTP/1.1 404 Not Found\r\nConnection: close\r\nServer: Ding #{DING_VERSION}\r\n\r\nNOT FOUND"
+  ERROR_404_RESPONSE="HTTP/1.1 404 Not Found\r\nConnection: close\r\nServer: Ding #{DING_VERSION}\r\n\r\nNOT FOUND".freeze
 end
 

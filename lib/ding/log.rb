@@ -1,5 +1,5 @@
 module Ding
-  module Logging
+  module Log
     class << self
       attr_writer :trace, :debug, :silent
 
@@ -8,38 +8,34 @@ module Ding
       def silent?;  @silent            end
     end
 
-    # Global silencer methods
     def silent
-      Logging.silent?
-    end
-    def silent=(value)
-      Logging.silent = value
+      Log.silent?
     end
 
-    # Log a message to the console
+    def silent=(value)
+      Log.silent = value
+    end
+
     def log(msg)
-      puts msg unless Logging.silent?
+      puts msg unless Log.silent?
     end
     module_function :log
     public :log
 
-    # Log a message to the console if tracing is activated
     def trace(msg=nil)
-      log msg || yield if Logging.trace?
+      log msg || yield if Log.trace?
     end
     module_function :trace
     public :trace
 
-    # Log a message to the console if debugging is activated
     def debug(msg=nil)
-      log msg || yield if Logging.debug?
+      log msg || yield if Log.debug?
     end
     module_function :debug
     public :debug
 
-    # Log an error backtrace if debugging is activated
     def log_error(e=$!)
-      STDERR.print("#{e}\n\t" + e.backtrace.join("\n\t")) if Logging.debug?
+      STDERR.print("#{e}\n\t" + e.backtrace.join("\n\t")) if Log.debug?
     end
     module_function :log_error
     public :log_error

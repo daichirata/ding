@@ -5,7 +5,7 @@ require 'strscan'
 require 'uri'
 
 require 'ding/const'
-require 'ding/logging'
+require 'ding/log'
 require 'ding/server'
 require 'ding/request'
 require 'ding/response'
@@ -19,8 +19,8 @@ module Ding
     attr_accessor :http_body
   end
 
-  Logging.debug = true
-  Logging.trace = true
+  Log.debug = true
+  #Log.trace = true
 end
 
 if $0 == __FILE__

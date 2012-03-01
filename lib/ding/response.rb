@@ -1,5 +1,7 @@
 module Ding
   class Response
+    include ::Ding::Log
+
     def initialize(client, status, headers, body)
       @client = client
       @status = status.to_i
@@ -22,7 +24,10 @@ module Ding
 
     def send_status
       unless @status_sent
-        @client.write(STATUS_FORMAT % [@status, HTTP_STATUS_CODES[@status]])
+        status = STATUS_FORMAT % [@status, HTTP_STATUS_CODES[@status]]
+#        log ">> " + status.split(LINE_END)[0]
+
+        @client.write(status)
         @status_sent = true
       end
     end

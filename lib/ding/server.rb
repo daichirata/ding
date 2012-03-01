@@ -1,15 +1,17 @@
 module Ding
   class Server
-    include ::Ding::Logging
+    include ::Ding::Log
 
     def initialize(host = nil, port = nil, app = nil)
       @app  = app
       @host = host || '0.0.0.0'
       @port = port || 1212
 
-      @socket = TCPServer.new(@host, @port)
+      @socket  = TCPServer.new(@host, @port)
       @workers = ThreadGroup.new
-      @timeout = 30
+
+      log ">> Ding #{DING_VERSION}"
+      log ">> ruby #{RUBY_INFO}"
     end
 
     def self.start(host, port, app)
@@ -17,9 +19,7 @@ module Ding
     end
 
     def start
-      log ">> Ding #{DING_VERSION}"
-      log ">> ruby #{RUBY_INFO}"
-      log ">> Listening on pid=#{$$} port=#{@port}, CTRL+C to stop"
+      log   ">> Listening on pid=#{$$} port=#{@port}, CTRL+C to stop"
       debug ">> Debugging ON"
       trace ">> Tracing ON"
 
@@ -28,19 +28,19 @@ module Ding
 
   private
     def run
-      trap {|socket|
+      trap do |socket|
         while true
-          Thread.start(socket.accept) do |client|
-            begin
-              thread = Thread.new(client) {|c| process_client(c) }
-              thread[:started_on] = Time.now
-              @workers.add(thread)
-            rescue
-              log_error
+          begin
+            thread = Thread.new(socket.accept) do |client|
+              process_client(client)
             end
+            thread[:started_on] = Time.now
+            @workers.add(thread)
+          rescue => e
+            log_error e
           end
         end
-      }
+      end
     end
 
     def process_client(client)
@@ -49,12 +49,8 @@ module Ding
         unless Response.send(client, *@app.call(res.env))
           raise ServerError
         end
-
-        #res = Response.new(status, headers, body)
-        #client.write(res)
       rescue => e
         log_error e
-        #client.write(ERROR_404_RESPONSE)
       ensure
         client.close
       end
@@ -63,10 +59,12 @@ module Ding
     def trap
       ['INT', 'TERM'].each do |signal|
         Signal.trap(signal) do
+          log ">> going to shutdown ..."
+          @workers.list.each {|worker| worker.join}
+
+          log ">> #{self.class}#start done."
           @socket.close
-          @workers.list.each do |worker|
-            worker.raise
-          end
+
           log ">> Stopping ..."; exit 1
         end
       end
@@ -75,5 +73,3 @@ module Ding
     end
   end
 end
-
-
