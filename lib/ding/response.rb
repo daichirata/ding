@@ -23,10 +23,10 @@ module Ding
     def send_status
       unless @status_sent
         status = Const::STATUS_FORMAT % [@status, HTTP_STATUS_CODES[@status]]
-        log_access(@request, @status, @headers)
-
         @client.write(status)
+
         @status_sent = true
+        log_access(@request, @status, @headers)
       end
     end
 

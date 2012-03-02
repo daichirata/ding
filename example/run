@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+
+app_path  = File.expand_path(File.dirname(__FILE__) + "/#{ARGV[0]}/#{ARGV[0]}.ru")
+
+if ARGV[1] == "webrick"
+  system "rackup #{app_path}"
+else
+  ding_path = File.expand_path(File.dirname(__FILE__) + '/../lib/rack/handler/ding.rb')
+  system "rackup -r #{ding_path} -s Ding #{app_path}"
+end
