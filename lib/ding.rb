@@ -14,7 +14,6 @@ require 'ding/response'
 
 module Ding
   class ServerError < StandardError; end
-  class ParseError < StandardError; end
 
   Log.silent = false
   Log.debug  = true

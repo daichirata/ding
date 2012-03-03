@@ -32,7 +32,11 @@ module Ding
     module_function :debug; public :debug
 
     def log_error(e=$!)
-      STDERR.print("#{e}\n\t" + e.backtrace.join("\n\t")) if Log.debug?
+      if Log.debug?
+        msg = "#{e.class} #{e}\n\t" +
+          e.backtrace.join("\n\t") + "\n"
+        STDERR.print(msg)
+      end
     end
     module_function :log_error; public :log_error
   end

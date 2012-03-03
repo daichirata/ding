@@ -1,4 +1,7 @@
 module Ding
+  class InValidRequest < StandardError; end
+  class ParseError < StandardError; end
+
   class Request
     attr_reader :env
 
@@ -18,22 +21,22 @@ module Ding
       @env = {
         # Meta
         "GATEWAY_INTERFACE" => "CGI/1.1",
-        "PATH_INFO"         => @parser.request_uri.path,
-        "QUERY_STRING"      => (it = @parser.request_uri.query) ? it : "",
-        "SCRIPT_NAME"       => "",
-        "SERVER_NAME"       => @parser.request_uri.host,
-        "SERVER_PORT"       => @parser.request_uri.port.to_s,
+        "SERVER_NAME"       => @parser.uri.host,
+        "SERVER_PORT"       => @parser.uri.port.to_s,
         "SERVER_PROTOCOL"   => "HTTP/1.1",
-        "SERVER_SOFTWARE"   => "Ding #{Const::DING_VERSION}",
-        "REQUEST_METHOD"    => @parser.request_method,
-        "REQUEST_URI"       => @parser.request_uri.request_uri,
+        "SERVER_SOFTWARE"   => Const::DING_VERSION_STRING,
+        "REQUEST_URI"       => @parser.uri.request_uri,
+        "REQUEST_METHOD"    => @parser.method,
         "REMOTE_USER"       => "",
         "REMOTE_ADDR"       => @peeraddr[3],
         "REMOTE_HOST"       => @peeraddr[2],
+        "PATH_INFO"         => @parser.uri.path,
+        "QUERY_STRING"      => (it = @parser.uri.query) ? it : "",
+        "SCRIPT_NAME"       => "",
 
         # Rack
         "rack.version"      => Rack::VERSION,
-        "rack.input"        => StringIO.new(@parser.message_body),
+        "rack.input"        => StringIO.new(@parser.body),
         "rack.errors"       => $stderr,
         "rack.multithread"  => true,
         "rack.multiprocess" => false,
@@ -41,7 +44,7 @@ module Ding
         "rack.url_scheme"   => "http"
       }
 
-      @parser.request_header.each do |key, val|
+      @parser.header.each do |key, val|
         case key
         when /^content-type$/io
           @env['CONTENT_TYPE'] = val
@@ -60,20 +63,19 @@ module Ding
       # attr_reader :request_line, :request_method, :request_uri,
       #             :request_header, :http_version, :message_body
 
-      attr_reader :request_method, :request_uri, :request_header, :message_body
+      attr_reader :method, :uri, :header, :body
 
       def initialize(source)
         @request_line = source.slice!(/(.*)\r\n/).strip
         if Regexep::REQUEST_LINE =~ @request_line
-          @request_method = $1
-          @unparsed_uri   = $2
-          @http_version   = $3
+          @method       = $1
+          @unparsed_uri = $2
         else
-          raise ParseError
+          raise InValidRequest, "bad request line `#@request_line."
         end
 
-        @request_header = {}
-        @message_body = ""
+        @header = {}
+        @body = ""
         super(source)
       end
 
@@ -84,29 +86,29 @@ module Ding
             field = self[1].strip
             value = self[2].strip
 
-            unless @request_header.has_key?(field)
-              @request_header[field] = value
+            unless @header.has_key?(field)
+              @header[field] = value
             end
           when scan(Regexep::BORDER)
-            @message_body = rest
+            @body = rest
             break
           else
-            raise ParseError
+            raise ParseError "bad request header."
           end
         end
         parse_uri
       end
 
       def parse_uri
-        if request_host = @request_header["Host"]
+        if request_host = @header["Host"]
           uri = URI.parse(@unparsed_uri)
           host, port = *request_host.scan(Regexep::URI)[0]
           uri.scheme = 'http'
           uri.host = host
           uri.port = port ? port.to_i : nil
-          @request_uri = URI.parse(uri.to_s)
+          @uri = URI.parse(uri.to_s)
         else
-          raise ParseError
+          raise InValidRequest, "no \"Host\" items to the header."
         end
       end
     end # Parser END

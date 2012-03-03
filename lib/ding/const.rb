@@ -2,6 +2,8 @@ module Ding
   module Const
     DING_VERSION = '0.0.1'
 
+    DING_VERSION_STRING = "Ding/#{DING_VERSION}"
+
     DEFAULT_HOST = "0.0.0.0"
 
     DEFAULT_PORT = 1212

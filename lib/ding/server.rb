@@ -14,6 +14,8 @@ module Ding
     end
 
     def start
+      raise ArgumentError, 'app required' unless @app
+
       log ">> #{self.class}#start: pid=#{$$} port=#{@port}, CTRL+C to stop"
       debug ">> Debugging ON"
 
@@ -26,8 +28,8 @@ module Ding
 
             thread[:started_on] = Time.now
             @workers.add(thread)
-          rescue => e
-            log_error e
+          rescue
+            log_error
           end
         end
       end
@@ -40,8 +42,8 @@ module Ding
 
         response = Response.new(client)
         response.call(status, headers, body)
-      rescue => e
-        log_error e
+      rescue
+        log_error
       ensure
         client.close
       end
