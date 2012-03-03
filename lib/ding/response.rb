@@ -2,61 +2,62 @@ module Ding
   class Response
     include ::Ding::Log
 
-    def initialize(client, request, app)
-      @client  = client
-      @request = request
-      @status, @headers, @body = app.call(request.env)
-      @status = @status.to_i
+    def initialize(socket)
+      @socket = socket
+
+      @params = HeaderParams.new
+      @output = []
+      @finished = false
+      @chunked = false
     end
 
-    def self.send(client, request, app)
-      new(client, request, app).send
-    end
+    def call(status, headers, body)
+      @head = Const::STATUS_FORMAT % [status, HTTP_STATUS_CODES[status.to_i]]
 
-    def send
-      send_status
-      send_header
-      send_body
-      done?
-    end
-
-    def send_status
-      unless @status_sent
-        status = Const::STATUS_FORMAT % [@status, HTTP_STATUS_CODES[@status]]
-        @client.write(status)
-
-        @status_sent = true
-        log_access(@request, @status, @headers)
-      end
-    end
-
-    def send_header
-      header = Header.new
-      @headers.each do |key, vs|
-        vs.split("\n").each{|val| header[key] = val}
+      if body.kind_of?(String)
+        headers["Content-Length"] = body.length.to_s
+        body = [body]
       end
 
-      unless @header_sent
-        @client.write(header.to_s + Const::LINE_END)
-        @header_sent = true
+      if headers["Transfer-Encoding"] == "chunked" || !headers.has_key?("Content-Length")
+        headers["Transfer-Encoding"] = "chunked"
+        @chunked = true
       end
+
+      @params['Date'] = Time.now
+      headers.each do |key, vs|
+        vs.split("\n").each{|val| @params[key] = val}
+      end
+      @head << @params.to_s << "\r\n"
+
+      if headers["Content-Length"] != "0"
+        body.each{|chunk| write(chunk)}
+      else
+        write('')
+      end
+
+      @finished = true
+      write('') if @chunked
+
+      body.close if body.respond_to?(:close)
     end
 
-    def send_body
-      unless @body_sent
-        @body.each do |part|
-          @client.write(part)
-        end
-        @body_sent = true
-      end
-    end
+    def write(chunk)
+      encoded =
+        @chunked ? "#{chunk.length.to_s(16)}\r\n#{chunk}\r\n" : chunk
 
-    def done?
-      @status_sent && @header_sent && @body_sent
+      if @head.nil?
+        @output << encoded
+      else
+        @output << @head + encoded
+        @head = nil
+      end
+
+      @socket.write(@output.join)
     end
   end
 
-  class Header
+  class HeaderParams
     def initialize
       @sent = {}
       @out  = []
@@ -77,6 +78,7 @@ module Ding
                 else
                   value.to_s
                 end
+
         @out << Const::HEADER_FORMAT % [key, value]
       end
     end

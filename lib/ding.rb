@@ -4,6 +4,7 @@ require 'socket'
 require 'uri'
 require 'strscan'
 require 'stringio'
+require 'time'
 
 require 'ding/const'
 require 'ding/log'
@@ -18,9 +19,4 @@ module Ding
   Log.silent = false
   Log.debug  = true
   #Log.trace = true
-end
-
-# for debug
-if $0 == __FILE__
-  Ding::Server.new.start
 end

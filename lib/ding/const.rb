@@ -1,7 +1,5 @@
 module Ding
-
   module Const
-
     DING_VERSION = '0.0.1'
 
     DEFAULT_HOST = "0.0.0.0"
@@ -14,20 +12,20 @@ module Ding
 
     MAX_BODY = MAX_HEADER = CHUNK_SIZE = 1024 * (80 + 32)
 
-    LINE_END="\r\n".freeze
-
     STATUS_FORMAT = "HTTP/1.1 %d %s\r\nConnection: close\r\n".freeze
 
-    HEADER_FORMAT      = "%s: %s\r\n".freeze
+    HEADER_FORMAT = "%s: %s\r\n"
 
-    ALLOWED_DUPLICATES = %w(Set-Cookie Set-Cookie2 Warning WWW-Authenticate).freeze
+    LINE_END="\r\n".freeze
 
-    ERROR_404_RESPONSE="HTTP/1.1 404 Not Found\r\nConnection: close\r\nServer: Ding #{DING_VERSION}\r\n\r\nNOT FOUND".freeze
+    ALLOWED_DUPLICATES =
+      %w(Set-Cookie Set-Cookie2 Warning WWW-Authenticate)
 
+    ERROR_404_RESPONSE =
+      "HTTP/1.1 404 Not Found\r\nConnection: close\r\nServer: Ding #{DING_VERSION}\r\n\r\nNOT FOUND"
   end
 
   module Regexep
-
     REQUEST_LINE = /^(\S+)\s+(\S++)(?:\s+HTTP\/(\d+\.\d+))/mo
 
     URI   = /\A(#{URI::REGEXP::PATTERN::HOST})(?::(\d+))?\z/no
@@ -35,7 +33,6 @@ module Ding
     FIELD  = /^([A-Za-z0-9!\#$%&'*+\-.^_`|~]+):(.*)\r\n/o
 
     BORDER = /^\r\n/o
-
   end
 
   # Stolent from Mongrel.

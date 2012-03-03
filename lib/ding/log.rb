@@ -35,16 +35,5 @@ module Ding
       STDERR.print("#{e}\n\t" + e.backtrace.join("\n\t")) if Log.debug?
     end
     module_function :log_error; public :log_error
-
-    def log_access(req, status, hd)
-      msg =  %([#{Time.now.strftime("%Y/%m/%d %H:%M:%S")}] )
-      msg << %("#{req.request_line}" )
-      msg << %(#{status} )
-      msg << %(#{hd["Content-Length"]} ) if hd["Content-Length"]
-      msg << %(#{Time.now - req.request_time})
-
-      puts "#{msg}" unless Log.silent?
-    end
-    module_function :log_access; public :log_access
   end
 end

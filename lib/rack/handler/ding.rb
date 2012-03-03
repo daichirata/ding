@@ -9,10 +9,7 @@ module Rack
       def self.run(app, options={})
         #binding.pry
 
-        server =
-          ::Ding::Server.new(options[:Host] || '0.0.0.0', options[:Port] || 1212, app)
-
-        yield server if block_given?
+        server = ::Ding::Server.new(app, options)
         server.start
       end
 

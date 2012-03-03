@@ -1,9 +1,8 @@
 module Ding
   class Request
-    attr_reader :env, :request_time, :request_line
+    attr_reader :env
 
     def initialize(client)
-      @request_time = Time.now
       @peeraddr = client.respond_to?(:peeraddr) ? client.peeraddr : []
       @data     = client.readpartial(Const::CHUNK_SIZE)
       @parser   = Parser.new(@data)
@@ -44,9 +43,9 @@ module Ding
 
       @parser.request_header.each do |key, val|
         case key
-        when /^content-type$/i
+        when /^content-type$/io
           @env['CONTENT_TYPE'] = val
-        when /^content-length$/i
+        when /^content-length$/io
           @env['CONTENT_LENGTH'] = val if val.to_i > 0
         else
           name = "HTTP_" << key.gsub(/-/o, '_').upcase
@@ -54,7 +53,6 @@ module Ding
         end
       end
 
-      @request_line = @parser.request_line
       return self
     end
 
@@ -62,7 +60,7 @@ module Ding
       # attr_reader :request_line, :request_method, :request_uri,
       #             :request_header, :http_version, :message_body
 
-      attr_reader :request_line, :request_method, :request_uri, :request_header, :message_body
+      attr_reader :request_method, :request_uri, :request_header, :message_body
 
       def initialize(source)
         @request_line = source.slice!(/(.*)\r\n/).strip
@@ -114,3 +112,4 @@ module Ding
     end # Parser END
   end
 end
+

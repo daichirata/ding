@@ -2,36 +2,28 @@ module Ding
   class Server
     include ::Ding::Log
 
-    def initialize(host = nil, port = nil, app = nil)
+    def initialize(app, options)
       @app  = app
-      @host = host || Const::DEFAULT_HOST
-      @port = port || Const::DEFAULT_PORT
+      @host = options[:Host] || Const::DEFAULT_HOST
+      @port = options[:Port] || Const::DEFAULT_PORT
       @socket  = TCPServer.new(@host, @port)
       @workers = ThreadGroup.new
-    end
 
-    def self.start(host, port, app)
-      new(host, port, app).start
+      log ">> Ding #{Const::DING_VERSION}"
+      log ">> ruby #{Const::RUBY_INFO}"
     end
 
     def start
-      log ">> Ding #{Const::DING_VERSION}"
-      log ">> ruby #{Const::RUBY_INFO}"
       log ">> #{self.class}#start: pid=#{$$} port=#{@port}, CTRL+C to stop"
       debug ">> Debugging ON"
-      trace ">> Tracing ON"
 
-      run
-    end
-
-  private
-    def run
       trap do |socket|
         while true
           begin
             thread = Thread.new(socket.accept) do |client|
               process_client(client)
             end
+
             thread[:started_on] = Time.now
             @workers.add(thread)
           rescue => e
@@ -44,9 +36,10 @@ module Ding
     def process_client(client)
       begin
         request = Request.parse(client)
-        unless Response.send(client, request, @app)
-          raise ServerError
-        end
+        status, headers, body = @app.call(request.env)
+
+        response = Response.new(client)
+        response.call(status, headers, body)
       rescue => e
         log_error e
       ensure
