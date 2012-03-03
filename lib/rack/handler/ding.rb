@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 require "rack/content_length"
 require "rack/chunked"
 require File.expand_path(File.dirname(__FILE__) + '/../../ding')
@@ -7,13 +6,12 @@ module Rack
   module Handler
     class Ding
       def self.run(app, options={})
-        #binding.pry
+        options = {
+          :host => options[:Host],
+          :port => options[:Port]
+        }
 
-        server =
-          ::Ding::Server.new(options[:Host] || '0.0.0.0', options[:Port] || 1212, app)
-
-        yield server if block_given?
-        server.start
+        ::Ding::Server.new(app, options).run
       end
 
       def self.valid_options

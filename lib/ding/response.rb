@@ -26,15 +26,17 @@ module Ding
         @client.write(status)
 
         @status_sent = true
-        log_access(@request, @status, @headers)
+        #log_access(@request, @status, @headers)
       end
     end
 
     def send_header
       header = Header.new
       @headers.each do |key, vs|
+        next if /\A(?:Date\z|Connection\z)/i =~ key
         vs.split("\n").each{|val| header[key] = val}
       end
+      header['Date'] = Time.now.httpdate
 
       unless @header_sent
         @client.write(header.to_s + Const::LINE_END)
